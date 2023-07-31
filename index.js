@@ -17,7 +17,7 @@ mongoose.connect('mongodb+srv://hyejin:abcd1234@cluster0.a7zxinx.mongodb.net/?re
 
 
 app.get('/', (req, res) => {
-  res.send('Hello World!')
+  res.send('Hello World! on Nodemon')
 })
 
 // app.post('/register',(req, res) => {
