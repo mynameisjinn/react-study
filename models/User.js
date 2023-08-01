@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
-const saltRounds = 10; // 10 자리 수로 생성
+const saltRounds = 10; 
+
+var jwt = require('jsonwebtoken');
 
 const userSchema = mongoose.Schema({
     name: {
@@ -37,7 +39,7 @@ const userSchema = mongoose.Schema({
 userSchema.pre('save',function( next ){
     var user = this;
 
-    if(user.isModified('password')){
+    if(user.isModified('password')){ // 비밀번호 정보를 수정하는 경우 암호화
         bcrypt.genSalt(saltRounds, function(err, salt) {
             if(err) return next(err)
     
@@ -47,8 +49,49 @@ userSchema.pre('save',function( next ){
                 next()
             })
         });
+    } else { // 비밀번호 외에 다른 정보를 수정하는 경우 
+        next()
     }
 })
+
+userSchema.methods.comparePassword = function(plainPassword, cb) {
+    /* plainPassword 1234567 암호화된 비밀번호 -> bcrypt 로 암호화한 비밀번호
+    암호화된 비밀번호를 복호화할 수는 없다. plainPassword 를 암호회하여 일치하는지 확인 */
+    
+    bcrypt.compare(plainPassword, this.password, function(err, isMatch){
+        if(err) return cb(err),
+        cb(null, isMatch)
+    });
+} 
+
+userSchema.methods.generateToken = function(cb) {
+    // jsonwebtoken 사용해서 토큰 생성
+    var user = this;
+
+    var token = jwt.sign(user._id.toHexString(), 'secretToken')
+    
+    // user._id + 'secretToken' = token
+
+    // ->
+
+    // 'secretToken' -> user._id
+
+    user.token = token;
+    user.save(function(err, user){
+        if(err) return cb(err)
+        cb(null, user)
+    })
+    // user.save()
+    // .then(user => {
+    //     // 저장 성공
+    //     cb(null, user);
+    // })
+    // .catch(err => {
+    //     // 에러 발생
+    //     cb(err);
+    // });
+
+}
 
 const User = mongoose.model('User', userSchema)
 
